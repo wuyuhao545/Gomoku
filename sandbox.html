@@ -1,0 +1,168 @@
+<!DOCTYPE html>  
+<html>  
+<body>  
+  <div id="root"></div>  
+</body>  
+<!-- This setup is not suitable for production. -->  
+<!-- Only use it in development! -->  
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>  
+<script async src="https://ga.jspm.io/npm:es-module-shims@1.7.0/dist/es-module-shims.js"></script>  
+<script type="importmap">  
+{  
+  "imports": {  
+    "react": "https://esm.sh/react?dev",  
+    "react-dom/client": "https://esm.sh/react-dom/client?dev"  
+  }  
+}  
+</script>  
+<script type="text/babel" data-type="module">  
+import React, { StrictMode, useState } from 'react';  
+import { createRoot } from 'react-dom/client';  
+
+function Square({ value, onSquareClick }) {  
+  return (  
+    <button className="square" onClick={onSquareClick}>  
+      {value}  
+    </button>  
+  );  
+}  
+
+function Board({ xIsNext, squares, onPlay }) {  
+  const handleClick = (i) => {  
+    if (calculateWinner(squares) || squares[i]) {  
+      return;  
+    }  
+    const nextSquares = squares.slice();  
+    nextSquares[i] = xIsNext ? 'X' : 'O';  
+    onPlay(nextSquares);  
+  };  
+
+  const winner = calculateWinner(squares);  
+  const status = winner ? 'Winner: ' + winner : 'Next player: ' + (xIsNext ? 'X' : 'O');  
+
+  const renderSquare = (i) => (  
+    <Square value={squares[i]} onSquareClick={() => handleClick(i)} />  
+  );  
+
+  return (  
+    <>  
+      <div className="status">{status}</div>  
+      {Array.from({ length: 15 }, (_, row) => (  
+        <div className="board-row" key={row}>  
+          {Array.from({ length: 15 }, (_, col) => renderSquare(row * 15 + col))}  
+        </div>  
+      ))}  
+    </>  
+  );  
+}  
+
+let App = function Game() {  
+  const [history, setHistory] = useState([Array(225).fill(null)]); // 15x15 board  
+  const [currentMove, setCurrentMove] = useState(0);  
+  const xIsNext = currentMove % 2 === 0;  
+  const currentSquares = history[currentMove];  
+
+  const handlePlay = (nextSquares) => {  
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];  
+    setHistory(nextHistory);  
+    setCurrentMove(nextHistory.length - 1);  
+  };  
+
+  const jumpTo = (nextMove) => {  
+    setCurrentMove(nextMove);  
+  };  
+
+  const moves = history.map((squares, move) => {  
+    const description = move > 0 ? 'Go to move #' + move : 'Go to game start';  
+    return (  
+      <li key={move}>  
+        <button onClick={() => jumpTo(move)}>{description}</button>  
+      </li>  
+    );  
+  });  
+
+  return (  
+    <div className="game">  
+      <div className="game-board">  
+        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />  
+      </div>  
+      <div className="game-info">  
+        <ol>{moves}</ol>  
+      </div>  
+    </div>  
+  );  
+}  
+
+function calculateWinner(squares) {  
+  const lines = [];  
+  // Horizontal, vertical, and diagonal lines  
+  for (let i = 0; i < 15; i++) {  
+    for (let j = 0; j < 15; j++) {  
+      if (j < 11) lines.push([i * 15 + j, i * 15 + j + 1, i * 15 + j + 2, i * 15 + j + 3, i * 15 + j + 4]); // Horizontal  
+      if (i < 11) lines.push([i * 15 + j, (i + 1) * 15 + j, (i + 2) * 15 + j, (i + 3) * 15 + j, (i + 4) * 15 + j]); // Vertical  
+      if (i < 11 && j < 11) lines.push([i * 15 + j, (i + 1) * 15 + j + 1, (i + 2) * 15 + j + 2, (i + 3) * 15 + j + 3, (i + 4) * 15 + j + 4]); // Diagonal \
+      if (i < 11 && j > 3) lines.push([i * 15 + j, (i + 1) * 15 + j - 1, (i + 2) * 15 + j - 2, (i + 3) * 15 + j - 3, (i + 4) * 15 + j - 4]); // Diagonal /  
+    }  
+  }  
+
+  for (const line of lines) {  
+    const [a, b, c, d, e] = line;  
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c] && squares[a] === squares[d] && squares[a] === squares[e]) {  
+      return squares[a];  
+    }  
+  }  
+  return null;  
+}  
+
+const root = createRoot(document.getElementById('root'));  
+root.render(  
+  <StrictMode>  
+    <App />  
+  </StrictMode>  
+);  
+</script>  
+<style>  
+* {  
+  box-sizing: border-box;  
+}  
+
+body {  
+  font-family: sans-serif;  
+  margin: 20px;  
+  padding: 0;  
+}  
+
+.square {  
+  background: #fff;  
+  border: 1px solid #999;  
+  float: left;  
+  font-size: 24px;  
+  font-weight: bold;  
+  line-height: 34px;  
+  height: 34px;  
+  margin-right: -1px;  
+  margin-top: -1px;  
+  padding: 0;  
+  text-align: center;  
+  width: 34px;  
+}  
+
+.board-row:after {  
+  clear: both;  
+  content: '';  
+  display: table;  
+}  
+
+.status {  
+  margin-bottom: 10px;  
+}  
+.game {  
+  display: flex;  
+  flex-direction: row;  
+}  
+
+.game-info {  
+  margin-left: 20px;  
+}  
+</style>  
+</html>
